@@ -49,9 +49,9 @@ def query_ai():
         if response.status_code != 200:
             print(f"Error: Received status code {response.status_code}")
             return jsonify({"reply": f"Error: Received status code {response.status_code} from API."}), response.status_code
-
-        data = response.json()
-        reply = data["choices"][0]["message"]["content"]
+            
+            data = response.json()
+            reply = data.get("choices", [{}])[0].get("message", {}).get("content", "🤖 Hmm, no response was generated. Try rephrasing your question.")
 
         # Formatting the reply for better readability
         formatted_reply = (
