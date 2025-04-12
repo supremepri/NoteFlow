@@ -292,8 +292,12 @@
   });
 }
 
-const floatingTimer = document.getElementById('floating-timer');
 
+let isDragging = false; // Declare the variable
+let offsetX = 0;        // Declare for X-axis offset
+let offsetY = 0;
+
+const floatingTimer = document.getElementById('floating-timer');
 
 
 floatingTimer.addEventListener('mousedown', (e) => {
@@ -301,6 +305,7 @@ floatingTimer.addEventListener('mousedown', (e) => {
   offsetX = e.clientX - floatingTimer.offsetLeft;
   offsetY = e.clientY - floatingTimer.offsetTop;
 });
+
 
 document.addEventListener('mousemove', (e) => {
   if (isDragging) {
