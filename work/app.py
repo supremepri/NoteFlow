@@ -1,23 +1,23 @@
 from flask import Flask, request, jsonify, render_template
 import requests
 from flask_dance.contrib.google import make_google_blueprint, google
+from dotenv import load_dotenv
 import os
-api_key = os.getenv("API_KEY")
 
-app = Flask(__name__)  # Default configuration works perfectly for this structure
+# Load environment variables from new.env
+load_dotenv("work/new.env")
+
+app = Flask(__name__)
 
 @app.route('/')
 def home():
     return render_template('index.html')
-    
 
 @app.route("/query", methods=["POST"])
 def query_ai():
     print("Query endpoint called")  # Debug statement
-     api_key = os.getenv("API_KEY")
-         data = request.json
     try:
-        api_key = "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"
+        api_key = os.getenv("API_KEY")  # Use environment variable for API key
         data = request.json
         user_message = data.get("message", "")
 
@@ -39,7 +39,6 @@ def query_ai():
                             "You are a helpful assistant. "
                             "Always give answers with proper spacing, line breaks between paragraphs, and use bullet points when appropriate. "
                             "Provide a summary first, then full details separated clearly."
-                            
                         )
                     },
                     {"role": "user", "content": user_message}
@@ -76,6 +75,6 @@ def query_ai():
     except Exception as e:
         print("Error:", e)
         return jsonify({"reply": "Something went wrong while processing your request."}), 500
-    
+
 if __name__ == '__main__':
     app.run(debug=True)
