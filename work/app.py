@@ -76,5 +76,24 @@ def query_ai():
         print("Error:", e)
         return jsonify({"reply": "Something went wrong while processing your request."}), 500
 
+
+
+
+@app.route('/api/chat', methods=["POST"])
+def chat_with_ai():
+    api_key = os.getenv("API_KEY")  # Ensure API key is being loaded
+    data = request.json
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json=data  # Forward the JSON payload from the frontend
+    )
+    return jsonify(response.json())
+
+
 if __name__ == '__main__':
     app.run(debug=True)
