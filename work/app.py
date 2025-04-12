@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import requests
 from flask_dance.contrib.google import make_google_blueprint, google
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, static_folder="work", template_folder="work")
 
 @app.route('/')
 def home():
