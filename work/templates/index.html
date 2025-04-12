@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NoteFlow</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -80,7 +81,6 @@
       </section>
     </main>
   </div>
-
   <script>
     // Firebase configuration
     const firebaseConfig = {
@@ -96,14 +96,12 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-
     db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
 
     const loginBtn = document.getElementById('google-login');
     const logoutBtn = document.getElementById('logout-btn');
     const notesList = document.getElementById('notes-list');
     const loadingIndicator = document.getElementById('loading');
-
     let currentUser = null;
 
     // Login functionality
@@ -130,434 +128,268 @@
       });
     }
 
-
-  async function loadUserNotes() {
-    if (!currentUser) return;
-
-    try {
-      const snapshot = await db.collection("notes")
-        .where("uid", "==", currentUser.uid)
-        .orderBy("createdAt", "desc")
-        .get();
-
-      notesList.innerHTML = ''; // Clear the current notes list
-
-      snapshot.forEach(doc => {
-        const note = doc.data();
-        const li = document.createElement('li');
-        li.textContent = note.content.length > 50 ? note.content.slice(0, 50) + '...' : note.content;
-        li.style.fontWeight = note.favorite ? 'bold' : 'normal'; // Highlight favorites
-
-        li.onclick = () => {
-          document.getElementById('note-editor').value = note.content;
-          document.getElementById('note-tags').value = note.tags || '';
-          document.getElementById('save-edit').dataset.id = doc.id;
-          switchView('notes-view');
-        };
-
-        notesList.appendChild(li);
-      });
-
-      populateNotesDropdown(snapshot); // Populate dropdown with user notes
-    } catch (err) {
-      console.error("Error loading notes:", err);
-      alert("Failed to load notes. Please try again.");
-    }
-  }
-
-     // Save note functionality
-  document.getElementById("save-note").onclick = async () => {
-    const latestFullText = document.querySelector(".ai-response:last-of-type .full-text");
-    if (!latestFullText || !latestFullText.innerText.trim()) {
-      alert("No AI response to save!");
-      return;
+    // Load user notes
+    async function loadUserNotes() {
+      if (!currentUser) return;
+      try {
+        const snapshot = await db.collection("notes")
+          .where("uid", "==", currentUser.uid)
+          .orderBy("createdAt", "desc")
+          .get();
+        notesList.innerHTML = '';  // Clear notes list
+        snapshot.forEach(doc => {
+          const note = doc.data();
+          const li = document.createElement('li');
+          li.textContent = note.content.length > 50 ? note.content.slice(0, 50) + '...' : note.content;
+          li.style.fontWeight = note.favorite ? 'bold' : 'normal';
+          li.onclick = () => {
+            document.getElementById('note-editor').value = note.content;
+            document.getElementById('note-tags').value = note.tags || '';
+            document.getElementById('save-edit').dataset.id = doc.id;
+            switchView('notes-view');
+          };
+          notesList.appendChild(li);
+        });
+        populateNotesDropdown(snapshot);
+      } catch (err) {
+        console.error("Error loading notes:", err);
+        alert("Failed to load notes. Please try again.");
+      }
     }
 
-    if (!currentUser) {
-      alert("You need to be logged in to save notes.");
-      return;
-    }
-
-    const newNote = {
-      uid: currentUser.uid,
-      content: latestFullText.innerText.trim(),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    // Save note functionality
+    document.getElementById("save-note").onclick = async () => {
+      const latestFullText = document.querySelector(".ai-response:last-of-type .full-text");
+      if (!latestFullText || !latestFullText.innerText.trim()) {
+        alert("No AI response to save!");
+        return;
+      }
+      if (!currentUser) {
+        alert("You need to be logged in to save notes.");
+        return;
+      }
+      const newNote = {
+        uid: currentUser.uid,
+        content: latestFullText.innerText.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      try {
+        await db.collection("notes").add(newNote);
+        alert("Note saved successfully!");
+        loadUserNotes();
+      } catch (err) {
+        console.error("Error saving note:", err);
+        alert("Failed to save the note.");
+      }
     };
 
-    try {
-      await db.collection("notes").add(newNote);
-      alert("Note saved successfully!");
-      loadUserNotes(); // Refresh the notes list after saving
-    } catch (err) {
-      console.error("Error saving note:", err);
-      alert("Failed to save the note.");
-    }
-  };
+    // Save edited note functionality
+    document.getElementById("save-edit").onclick = async () => {
+      const noteId = document.getElementById("save-edit").dataset.id;
+      const content = document.getElementById("note-editor").value.trim();
+      const tags = document.getElementById("note-tags").value.trim();
+      if (!noteId) {
+        alert("No note selected to edit!");
+        return;
+      }
+      if (!content) {
+        alert("Note content cannot be empty!");
+        return;
+      }
+      try {
+        await db.collection("notes").doc(noteId).update({
+          content,
+          tags,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Note updated successfully!");
+        loadUserNotes();
+      } catch (err) {
+        console.error("Error updating note:", err);
+        alert("Failed to save the note.");
+      }
+    };
 
-  // Save edited note functionality
-  document.getElementById("save-edit").onclick = async () => {
-    const noteId = document.getElementById("save-edit").dataset.id;
-    const content = document.getElementById("note-editor").value.trim();
-    const tags = document.getElementById("note-tags").value.trim();
+    // Delete note functionality (toggle favorite)
+    document.getElementById("delete-note").onclick = async () => {
+      const noteId = document.getElementById("save-edit").dataset.id;
+      if (!noteId) {
+        alert("No note selected!");
+        return;
+      }
+      try {
+        const docRef = db.collection("notes").doc(noteId);
+        const docSnapshot = await docRef.get();
+        if (!docSnapshot.exists) {
+          alert("Note not found!");
+          return;
+        }
+        const isFavorite = docSnapshot.data().favorite || false;
+        await docRef.update({ favorite: !isFavorite });
+        alert(isFavorite ? "Removed from Favorites" : "Added to Favorites");
+        loadUserNotes();
+      } catch (err) {
+        console.error("Error toggling favorite:", err);
+        alert("Failed to toggle favorite status.");
+      }
+    };
 
-    if (!noteId) {
-      alert("No note selected to edit!");
-      return;
-    }
-
-    if (!content) {
-      alert("Note content cannot be empty!");
-      return;
-    }
-
-    try {
-      await db.collection("notes").doc(noteId).update({
-        content,
-        tags,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    // Populate dropdown for Learn View
+    function populateNotesDropdown(snapshot) {
+      const dropdown = document.getElementById("topic-dropdown");
+      dropdown.innerHTML = '<option value="" disabled selected>Select a note</option>';
+      snapshot.forEach(doc => {
+        const note = doc.data();
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = note.content.slice(0, 50) + "...";
+        dropdown.appendChild(option);
       });
-      alert("Note updated successfully!");
-      loadUserNotes(); // Refresh notes list to reflect changes
-    } catch (err) {
-      console.error("Error updating note:", err);
-      alert("Failed to save the note.");
-    }
-  };
-
-  // Delete note functionality
-  document.getElementById("delete-note").onclick = async () => {
-    const noteId = document.getElementById("save-edit").dataset.id;
-
-    if (!noteId) {
-      alert("No note selected!");
-      return;
     }
 
-    try {
-      const docRef = db.collection("notes").doc(noteId);
-      const docSnapshot = await docRef.get();
+    // Handle auth state changes
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline-block';
+        loadUserNotes();
+      } else {
+        currentUser = null;
+        loginBtn.style.display = 'inline-block';
+        logoutBtn.style.display = 'none';
+        notesList.innerHTML = '';
+      }
+    });
+
+    // Floating timer drag-and-drop functionality
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    const floatingTimer = document.getElementById('floating-timer');
+    floatingTimer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      offsetX = e.clientX - floatingTimer.offsetLeft;
+      offsetY = e.clientY - floatingTimer.offsetTop;
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        floatingTimer.style.left = `${e.clientX - offsetX}px`;
+        floatingTimer.style.top = `${e.clientY - offsetY}px`;
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+    function showFloatingTimer() {
+      floatingTimer.style.display = 'block';
+    }
+    function hideFloatingTimer() {
+      floatingTimer.style.display = 'none';
+    }
+
+    // Standard AI Chat Query Functionality
+    async function sendQuery() {
+      const question = document.getElementById("user-input").value.trim();
+      if (!question) {
+        alert("Please enter a message!");
+        return;
+      }
+      loadingIndicator.style.display = "block";
+      try {
+        const response = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: question })
+        });
+        if (!response.ok) {
+          console.error(`Error fetching response. Status: ${response.status}`);
+          alert("Failed to get response from the AI.");
+          return;
+        }
+        const data = await response.json();
+        const reply = data.reply.join("<br>") || "🤖 No response available.";
+        renderChatMessage("user", question);
+        renderChatMessage("assistant", reply);
+      } catch (error) {
+        console.error("Error during fetch:", error.message);
+        alert("An unexpected error occurred.");
+      } finally {
+        loadingIndicator.style.display = "none";
+      }
+    }
+
+    // Render chat messages to Chat Box
+    function renderChatMessage(role, message) {
+      const chatBox = document.getElementById("chat-box");
+      const messageContainer = document.createElement("div");
+      messageContainer.className = `chat-message ${role}`;
+      const text = document.createElement("p");
+      text.innerHTML = message;
+      messageContainer.appendChild(text);
+      chatBox.appendChild(messageContainer);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      console.log(`${role} message rendered:`, message);
+    }
+
+    // Hook sendQuery to chat form submission
+    document.getElementById("chat-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      sendQuery();
+      document.getElementById("user-input").value = "";
+    });
+
+    // Learn View: AI Query for a selected note
+    document.getElementById("ask-ai").addEventListener("click", async () => {
+      const topicDropdown = document.getElementById("topic-dropdown");
+      const selectedNoteId = topicDropdown.value;
+      const userQuery = document.getElementById("learn-input").value.trim();
+      if (!selectedNoteId) {
+        alert("Please select a note first!");
+        return;
+      }
+      if (!userQuery) {
+        alert("Please enter your question.");
+        return;
+      }
+      const noteRef = db.collection("notes").doc(selectedNoteId);
+      const docSnapshot = await noteRef.get();
       if (!docSnapshot.exists) {
-        alert("Note not found!");
+        alert("The selected note no longer exists.");
         return;
       }
-
-      const isFavorite = docSnapshot.data().favorite || false; // Defaults to false
-      await docRef.update({ favorite: !isFavorite }); // Toggle favorite
-      alert(isFavorite ? "Removed from Favorites" : "Added to Favorites");
-      loadUserNotes(); // Refresh notes list
-    } catch (err) {
-      console.error("Error toggling favorite:", err);
-      alert("Failed to toggle favorite status.");
-    }
-  };
-
-  // Populate dropdown for Learn View
-  function populateNotesDropdown(snapshot) {
-    const dropdown = document.getElementById("topic-dropdown");
-    dropdown.innerHTML = '<option value="" disabled selected>Select a note</option>';
-
-    snapshot.forEach(doc => {
-      const note = doc.data();
-      const option = document.createElement("option");
-      option.value = doc.id; // Store document ID for reference
-      option.textContent = note.content.slice(0, 50) + "..."; // Display preview
-      dropdown.appendChild(option);
-    });
-  }
-
-  // Handle auth state changes
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      currentUser = user;
-      loginBtn.style.display = 'none';
-      logoutBtn.style.display = 'inline-block';
-      loadUserNotes(); // Load notes and populate dropdown on login
-    } else {
-      currentUser = null;
-      loginBtn.style.display = 'inline-block';
-      logoutBtn.style.display = 'none';
-      notesList.innerHTML = '';
-    }
-  });
-
-  // Floating timer drag-and-drop functionality
-  let isDragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  const floatingTimer = document.getElementById('floating-timer');
-
-  floatingTimer.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    offsetX = e.clientX - floatingTimer.offsetLeft;
-    offsetY = e.clientY - floatingTimer.offsetTop;
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      floatingTimer.style.left = `${e.clientX - offsetX}px`;
-      floatingTimer.style.top = `${e.clientY - offsetY}px`;
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    isDragging = false;
-  });
-
-  function showFloatingTimer() {
-    floatingTimer.style.display = 'block';
-  }
-
-  function hideFloatingTimer() {
-    floatingTimer.style.display = 'none';
-  }
-  // Ask AI functionality
-  async function sendQuery() {
-  const question = document.getElementById("user-input").value.trim();
-  if (!question) {
-    alert("Please enter a message!");
-    return;
-  }
-
-  // Show loading indicator
-  loadingIndicator.style.display = "block";
-
-  try {
-    const response = await fetch("/query", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: question })
+      const noteContent = docSnapshot.data().content;
+      const contextualQuery = `User Note: ${noteContent}\n\nQuestion: ${userQuery}`;
+      loadingIndicator.style.display = "block";
+      try {
+        const response = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: contextualQuery })
+        });
+        if (!response.ok) {
+          console.error("Error fetching AI response:", response.status);
+          alert("AI failed to provide an answer.");
+          return;
+        }
+        const data = await response.json();
+        const aiReply = data.reply.join("<br>") || "🤖 No response was generated.";
+        renderChatMessage("user", userQuery);
+        renderChatMessage("assistant", aiReply);
+      } catch (error) {
+        console.error("Error during AI fetch:", error.message);
+        alert("Something went wrong with the AI query.");
+      } finally {
+        loadingIndicator.style.display = "none";
+      }
     });
 
-    if (!response.ok) {
-      console.error(`Error fetching response. Status: ${response.status}`);
-      alert("Failed to get a response from AI.");
-      return;
-    }
-
-    const data = await response.json();
-    const reply = data.reply.join("<br>") || "🤖 No response.";
-
-    // Display AI response in the chat box
-    const responseContainer = document.createElement("div");
-    responseContainer.classList.add("ai-response");
-    responseContainer.innerHTML = reply;
-
-    document.getElementById("chat-box").appendChild(responseContainer);
-  } catch (error) {
-    console.error("Error during fetch:", error.message);
-    alert("An error occurred while communicating with the server.");
-  } finally {
-    // Hide loading indicator
-    loadingIndicator.style.display = "none";
-  }
-}
-
-// Hooking up the sendQuery function to your chat form submission
-document.getElementById("chat-form").addEventListener("submit", function (e) {
-  e.preventDefault();
-  sendQuery();
-  document.getElementById("user-input").value = ""; // Clear input field
-});
-
-  // Render chat messages in Learn View
-  function renderChatMessage(role, message) {
-    const learnContent = document.getElementById("learn-content");
-    if (!learnContent) {
-      console.error("Learn-content element not found!");
-      return;
-    }
-
-    const messageContainer = document.createElement("div");
-    messageContainer.classList.add("chat-message", role);
-
-    const text = document.createElement("p");
-    text.textContent = message;
-
-    messageContainer.appendChild(text);
-    learnContent.appendChild(messageContainer);
-
-    learnContent.scrollTop = learnContent.scrollHeight; // Auto-scroll to latest message
-    console.log(`Message rendered (${role}):`, message);
-  }
-
-  // Learn View AI functionality
-  document.getElementById("ask-ai").onclick = async () => {
-    const dropdown = document.getElementById("topic-dropdown");
-    const noteId = dropdown.value;
-    const userQuery = document.getElementById("learn-input").value.trim();
-
-    if (!noteId) return alert("Please select a note first!");
-    if (!userQuery) return alert("Please ask a question!");
-
-    const docRef = db.collection("notes").doc(noteId);
-    const docSnapshot = await docRef.get();
-    if (!docSnapshot.exists) return alert("Note not found!");
-
-    const noteContent = docSnapshot.data().content;
-    const context = `User note: ${noteContent}\n\nUser question: ${userQuery}`;
-
-    // Show loading indicator
-    loadingIndicator.style.display = "block";
-
-    try {
-      const res = await fetch("/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: context
-        })
-      });
-
-      if (!res.ok) {
-        console.error("Error fetching response. Status:", res.status);
-        alert("Failed to get response from AI.");
-        return;
-      }
-
-      const data = await res.json();
-      const reply = data.reply.join("<br>") || "🤖 No response.";
-
-      renderChatMessage("user", userQuery); // Display user query
-      renderChatMessage("assistant", reply); // Display AI response
-    } catch (err) {
-      console.error("Error during fetch:", err.message);
-      alert("Failed to get response!");
-    } finally {
-      loadingIndicator.style.display = "none"; // Hide loading indicator
-    }
-  };
-  // Function to handle AI queries for enhanced error resilience
-  async function sendQuery() {
-    const question = document.getElementById("user-input").value.trim();
-    if (!question) {
-      alert("Please enter a message!");
-      return;
-    }
-
-    // Display loading indicator
-    loadingIndicator.style.display = "block";
-
-    try {
-      const response = await fetch("/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: question })
-      });
-
-      // Check HTTP status and parse response
-      if (!response.ok) {
-        console.error("Error fetching response. Status:", response.status);
-        alert("Failed to get response from the AI.");
-        return;
-      }
-
-      const data = await response.json();
-      const reply = data.reply.join("<br>") || "🤖 No response available.";
-
-      // Render chat response
-      renderChatMessage("user", question); // Show user input
-      renderChatMessage("assistant", reply); // Show AI response
-    } catch (error) {
-      console.error("Error during fetch:", error.message);
-      alert("An unexpected error occurred.");
-    } finally {
-      // Hide loading indicator
-      loadingIndicator.style.display = "none";
-    }
-  }
-
-  // Function to display AI responses in chat
-  function renderChatMessage(role, message) {
-    const chatBox = document.getElementById("chat-box");
-
-    const messageContainer = document.createElement("div");
-    messageContainer.className = `chat-message ${role}`;
-
-    const text = document.createElement("p");
-    text.innerHTML = message; // Support HTML formatting for AI replies
-
-    messageContainer.appendChild(text);
-    chatBox.appendChild(messageContainer);
-
-    // Scroll to the latest message
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    console.log(`${role} message rendered:`, message);
-  }
-
-  // Event listener for chat form submission
-  document.getElementById("chat-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    sendQuery();
-    document.getElementById("user-input").value = ""; // Clear input field
-  });
-
-  // Learn View functionality for querying AI about notes
-  document.getElementById("ask-ai").addEventListener("click", async () => {
-    const topicDropdown = document.getElementById("topic-dropdown");
-    const selectedNoteId = topicDropdown.value;
-    const userQuery = document.getElementById("learn-input").value.trim();
-
-    if (!selectedNoteId) {
-      alert("Please select a note first!");
-      return;
-    }
-
-    if (!userQuery) {
-      alert("Please enter your question.");
-      return;
-    }
-
-    const noteRef = db.collection("notes").doc(selectedNoteId);
-    const noteSnapshot = await noteRef.get();
-
-    if (!noteSnapshot.exists) {
-      alert("The selected note no longer exists.");
-      return;
-    }
-
-    const noteContent = noteSnapshot.data().content;
-    const contextualQuery = `User Note: ${noteContent}\n\nQuestion: ${userQuery}`;
-
-    // Display loading indicator
-    loadingIndicator.style.display = "block";
-
-    try {
-      const response = await fetch("/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: contextualQuery })
-      });
-
-      if (!response.ok) {
-        console.error("Error fetching AI response:", response.status);
-        alert("AI failed to provide an answer.");
-        return;
-      }
-
-      const data = await response.json();
-      const aiReply = data.reply.join("<br>") || "🤖 No response was generated.";
-
-      renderChatMessage("user", userQuery); // Display user question
-      renderChatMessage("assistant", aiReply); // Display AI response
-    } catch (error) {
-      console.error("Error during AI fetch:", error.message);
-      alert("Something went wrong with the AI query.");
-    } finally {
-      // Hide loading indicator
-      loadingIndicator.style.display = "none";
-    }
-  });
-
-  // Error Resilience: Handle generic JS errors
-  window.addEventListener("error", function (e) {
-    console.error("Global Error Caught:", e.message);
-    alert("An unexpected error occurred. Check the console for details.");
-  });
+    // Global error handling
+    window.addEventListener("error", function (e) {
+      console.error("Global Error Caught:", e.message);
+      alert("An unexpected error occurred. Check the console for details.");
+    });
   </script>
 </body>
 </html>
