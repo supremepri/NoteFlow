@@ -1,0 +1,444 @@
+/* Base Styling */
+body {
+  font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+  background-color: #000; /* Pure black background */
+  color: #fff; /* Crisp white text */
+  margin: 0;
+  padding: 2rem;
+  font-size: 16px;
+}
+
+/* Header Styling */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #1f1f1f; /* Subtle divider line */
+}
+
+/* Navigation Button Styling */
+nav button {
+  margin-left: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  background: #111; /* Slightly lighter black for contrast */
+  border: 1px solid #333; /* Thin white border */
+  border-radius: 6px;
+  color: #fff; /* Bright white text */
+  transition: background 0.3s, transform 0.2s ease-in-out;
+}
+
+nav button:hover {
+  background: #222; /* Elevated black for hover */
+  transform: scale(1.05); /* Slight zoom effect */
+}
+
+button:active {
+  transform: scale(0.95); /* Subtle press effect */
+}
+
+/* Input & Textarea Styling */
+input[type="text"] {
+  padding: 12px 16px;
+  width: 80%; /* Adjusted size for text box */
+  font-size: 16px;
+  background-color: #121212; /* Dark background */
+  border: 1px solid #333; /* Thin border for inputs */
+  color: #fff; /* White text for visibility */
+  border-radius: 8px;
+  margin-top: 8px;
+  transition: border-color 0.3s ease-in-out;
+}
+
+input[type="text"]:focus {
+  border-color: #444; /* Highlight on focus */
+  outline: none;
+}
+
+
+/* Buttons Styling */
+.pure-button {
+  background: rgba(255, 255, 255, 0.1); /* Transparent white for glass effect */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Light border */
+  color: white;
+  border-radius: 6px;
+  backdrop-filter: blur(10px); /* Frosted glass effect */
+  -webkit-backdrop-filter: blur(10px); /* Frosted glass for Safari */
+  transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pure-button:hover {
+  background: rgba(255, 255, 255, 0.2); /* Slightly brighter on hover */
+  box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1); /* Subtle glow */
+  transform: translateY(-2px); /* Lift effect */
+}
+
+.pure-button:active {
+  background: rgba(255, 255, 255, 0.15); /* Dim glow on press */
+  transform: scale(0.98); /* Subtle shrink */
+}
+
+/* Sections */
+section {
+  margin-top: 2rem;
+}
+
+/* App Container */
+.app-container {
+  background: rgba(255, 255, 255, 0.05); /* Transparent background */
+  border-radius: 12px;
+  backdrop-filter: blur(10px); /* Frosted glass */
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
+  padding: 1rem;
+}
+
+/* Chat Box & Notes View */
+#chat-box {
+  background: rgba(255, 255, 255, 0.05); /* Glassy background */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Gentle shadow */
+  padding: 1rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 1rem;
+  background-color: #0e0e0e; /* Neutral background for contrast */
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+  word-wrap: break-word; /* Ensures long text wraps correctly */
+  white-space: pre-wrap; /* Preserves line breaks in the text */
+  line-height: 1.6; /* Improves text readability */
+}
+
+
+
+/* Hidden Elements */
+.hidden {
+  display: none;
+}
+
+/* Logout and Save Buttons */
+#logout-btn, #save-edit {
+  padding: 12px 18px;
+  font-size: 14px;
+  background: #111; /* Neutral black */
+  border: 1px solid #333; /* Subtle border */
+  color: #fff; /* Crisp white text */
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+#logout-btn:hover, #save-edit:hover {
+  background: #222; /* Elevated black for hover */
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1); /* Gentle white glow */
+  transform: scale(1.05); /* Slight lift effect */
+}
+
+#logout-btn:active, #save-edit:active {
+  background: #1a1a1a; /* Slightly darker for press */
+  box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1); /* Reduced glow */
+  transform: scale(0.95); /* Subtle press effect */
+}
+.ai-response button {
+  padding: 8px 12px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1); /* Transparent white for glass effect */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+  color: #fff; /* Crisp white text */
+  border-radius: 6px;
+  backdrop-filter: blur(10px); /* Frosted glass effect */
+  -webkit-backdrop-filter: blur(10px); /* For Safari */
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.ai-response button:hover {
+  background: rgba(255, 255, 255, 0.2); /* Brighter on hover */
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1); /* Subtle glow */
+  transform: scale(1.05); /* Slight lift */
+}
+
+.ai-response button:active {
+  background: rgba(255, 255, 255, 0.15); /* Dim glow on press */
+  transform: scale(0.98); /* Subtle shrink */
+}
+#learn-content {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+/* Chat Messages */
+.chat-message {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.chat-message.user {
+  background-color: #163f46;
+  text-align: right;
+  color: #fff;
+}
+
+.chat-message.assistant {
+  background-color: #2c2c2c;
+  text-align: left;
+  color: #fff;
+}
+
+/* Learn Page - Centered Textbox */
+#learn-input {
+  width: 80%;
+  margin: 15px auto;
+  display: block;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Learn Content */
+#learn-content {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+  margin-top: 20px;
+  color: #000;
+}
+
+/* Notes Page - Google Docs Style */
+#notes-view {
+  display: flex;
+  padding: 20px;
+  gap: 20px;
+}
+
+#notes-list {
+  width: 25%; /* Slightly wider for better usability */
+  max-height: 300px; /* Maintain height for consistency */
+  overflow-y: auto;
+  background-color: #1a1a1a; /* Clean dark background */
+  border: none; /* Remove border for minimal look */
+  border-radius: 8px; /* Keep rounded corners */
+  padding: 10px; /* Maintain padding for spacing */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+}
+
+#notes-list li {
+  padding: 10px; /* Slightly larger padding for better spacing */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s ease-in-out;
+  border-radius: 6px; /* Rounded corners for list items */
+}
+
+#notes-list li:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
+  transform: scale(1.02); /* Slight zoom effect */
+}
+
+#notes-list li:hover {
+  background-color: #e8e8e8;
+  color: #000;
+}
+
+#note-editor-container {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+
+#note-editor {
+  height: 300px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 10px;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  resize: none;
+  background-color: #2b2b2b;
+  color: #fff;
+}
+
+#note-tags {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+#save-edit {
+  margin-top: 10px;
+  padding: 10px 15px;
+  background-color: #163f46;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#save-edit:hover {
+  background-color: #135b63;
+}
+/* Mobile Styles: Target devices with a max width of 768px */
+@media screen and (max-width: 768px) {
+
+  /* Base Styling */
+  body {
+    padding: 1rem; /* Reduce padding for smaller screens */
+    font-size: 14px; /* Slightly smaller text for better fit */
+  }
+
+  /* Navigation Buttons */
+  nav button {
+    padding: 8px 16px; /* Reduce button size */
+    font-size: 12px; /* Adjust text size */
+    margin-left: 5px; /* Less spacing between buttons */
+  }
+
+  /* App Container */
+  .app-container {
+    padding: 0.5rem; /* Reduce padding */
+    border-radius: 8px; /* Slightly smaller corners */
+  }
+
+  /* Sections */
+  section {
+    margin-top: 1rem; /* Reduce spacing between sections */
+  }
+
+  /* Chat Box */
+  #chat-box {
+    max-height: 200px; /* Limit height for smaller screens */
+    font-size: 14px; /* Adjust font size for readability */
+    padding: 0.5rem; /* Reduce padding */
+  }
+
+  /* Input Text Box (Chat & Learn) */
+  input[type="text"], #learn-input {
+    width: 100%; /* Full width on smaller screens */
+    font-size: 14px; /* Adjust font size */
+    padding: 10px; /* Reduce padding */
+  }
+
+  /* Learn Page */
+  #learn-content {
+    max-height: 300px; /* Reduce max height */
+    padding: 8px; /* Smaller padding */
+  }
+
+  /* Notes View */
+  #notes-view {
+    flex-direction: column; /* Stack items vertically */
+    padding: 10px; /* Reduce padding */
+  }
+
+  #notes-list {
+    width: 100%; /* Full width for list */
+    max-height: 200px; /* Limit height */
+    margin-bottom: 1rem; /* Add spacing below the list */
+  }
+
+  #note-editor-container {
+    width: 100%; /* Full width for editor */
+  }
+
+  #note-editor {
+    height: 200px; /* Reduce editor height */
+  }
+
+  /* Buttons */
+  .pure-button, #save-edit, #logout-btn, #ask-ai {
+    padding: 10px 12px; /* Reduce button size */
+    font-size: 12px; /* Smaller font size */
+  }
+}
+#timer-container {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+#timer {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+  color: #fff;
+  background: #111; /* Slight contrast to background */
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+#timer-controls button {
+  margin: 0.5rem;
+  padding: 10px 15px;
+  font-size: 14px;
+  background: #163f46;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#timer-controls button:hover {
+  background: #135b63;
+}
+
+#timer-controls button:active {
+  background: #102f3c;
+}
+#floating-timer {
+  position: fixed;
+  top: 10%;
+  left: 10%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.7); /* Semi-transparent black */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle border */
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Depth effect */
+  cursor: grab; /* Show movable cursor */
+  z-index: 9999; /* Ensure it's above other content */
+}
+
+#floating-timer:hover {
+  cursor: grabbing; /* Movable hover effect */
+}
+
+#timer {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+#close-timer {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#close-timer:hover {
+  color: #f00; /* Red for hover effect */
+}
