@@ -129,6 +129,42 @@
         document.getElementById(view).style.display = (view === viewId) ? 'block' : 'none';
       });
     }
+
+
+  async function loadUserNotes() {
+    if (!currentUser) return;
+
+    try {
+      const snapshot = await db.collection("notes")
+        .where("uid", "==", currentUser.uid)
+        .orderBy("createdAt", "desc")
+        .get();
+
+      notesList.innerHTML = ''; // Clear the current notes list
+
+      snapshot.forEach(doc => {
+        const note = doc.data();
+        const li = document.createElement('li');
+        li.textContent = note.content.length > 50 ? note.content.slice(0, 50) + '...' : note.content;
+        li.style.fontWeight = note.favorite ? 'bold' : 'normal'; // Highlight favorites
+
+        li.onclick = () => {
+          document.getElementById('note-editor').value = note.content;
+          document.getElementById('note-tags').value = note.tags || '';
+          document.getElementById('save-edit').dataset.id = doc.id;
+          switchView('notes-view');
+        };
+
+        notesList.appendChild(li);
+      });
+
+      populateNotesDropdown(snapshot); // Populate dropdown with user notes
+    } catch (err) {
+      console.error("Error loading notes:", err);
+      alert("Failed to load notes. Please try again.");
+    }
+  }
+
      // Save note functionality
   document.getElementById("save-note").onclick = async () => {
     const latestFullText = document.querySelector(".ai-response:last-of-type .full-text");
