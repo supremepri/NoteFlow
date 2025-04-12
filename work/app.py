@@ -14,6 +14,8 @@ def home():
 @app.route("/query", methods=["POST"])
 def query_ai():
     print("Query endpoint called")  # Debug statement
+     api_key = os.getenv("API_KEY")
+         data = request.json
     try:
         api_key = "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"
         data = request.json

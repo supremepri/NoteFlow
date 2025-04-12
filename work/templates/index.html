@@ -335,23 +335,19 @@ function hideFloatingTimer() {
   // Show loading indicator
   loadingIndicator.style.display = "block";
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    model: "meta-llama/llama-3.3-70b-instruct:free",
-    messages: [
-    { role: "system", content: "You are a helpful assistant., whenever explaining content use proper spacing which is efficient and helps the user read better and DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______ " },
-      { role: "user", content: question }
-    ]
-  })
-});
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: "You are a helpful assistant... always explain and format the writing in a way the user can understand, NEVER USE ASTERISK rather use bulletpoint • and use Underline as well _____" },
+          { role: "user", content: question }
+        ]
+      })
+    });
 
     if (!res.ok) {
       console.error("Error fetching response. Status:", res.status);
@@ -359,50 +355,13 @@ function hideFloatingTimer() {
       return;
     }
 
-
-    //// { role: "system", content: "You are a helpful assistant., whenever explaining content use proper spacing which is efficient and helps the user read better and DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______ " },
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content || "🤖 No response.";
-
-    // Parse AI response
-    const lines = reply.split('\n').filter(line => line.trim() !== "");
-    const previewLines = lines.slice(0, 2).join('<br>');
-    const fullLines = lines.join('<br>');
-
-    // Create response container
-    const responseContainer = document.createElement('div');
-    responseContainer.classList.add('ai-response');
-
-    // Create preview and full-text spans
-    const previewSpan = document.createElement('span');
-    previewSpan.className = 'preview-text';
-    previewSpan.innerHTML = previewLines;
-
-    const fullSpan = document.createElement('span');
-    fullSpan.className = 'full-text hidden';
-    fullSpan.innerHTML = fullLines;
-
-    // Create toggle button
-    const toggleBtn = document.createElement('button');
-    toggleBtn.textContent = 'Show More';
-    toggleBtn.onclick = () => {
-      fullSpan.classList.toggle('hidden');
-      previewSpan.classList.toggle('hidden');
-      toggleBtn.textContent = toggleBtn.textContent === 'Show More' ? 'Show Less' : 'Show More';
-    };
-
-    // Append elements to response container
-    responseContainer.append(previewSpan, fullSpan, toggleBtn);
-
-    // Append response container to chat-box
-    document.getElementById("chat-box").appendChild(responseContainer);
-
-    console.log("AI Response:", reply);
+    renderChatMessage("assistant", reply);
   } catch (err) {
     console.error("Error during fetch:", err.message);
     alert("Failed to get response!");
   } finally {
-    // Hide loading indicator
     loadingIndicator.style.display = "none";
   }
 }
