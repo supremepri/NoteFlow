@@ -2,11 +2,12 @@ from flask import Flask, request, jsonify, render_template
 import requests
 from flask_dance.contrib.google import make_google_blueprint, google
 
-app = Flask(__name__, static_folder="work", template_folder="work")
+app = Flask(__name__)  # Default configuration works perfectly for this structure
 
 @app.route('/')
 def home():
-    return render_template('index.html') 
+    return render_template('index.html')
+    
 
 @app.route("/query", methods=["POST"])
 def query_ai():
