@@ -317,7 +317,7 @@
   const question = document.getElementById("user-input").value.trim();
   if (!question) {
     alert("Please enter a message!");
-    return; // Exit here to prevent further execution
+    return;
   }
 
   // Show loading indicator
@@ -331,33 +331,35 @@
     });
 
     if (!response.ok) {
-      const errorMsg = `Error fetching response. Status: ${response.status}`;
-      console.error(errorMsg);
-      alert("Failed to get a response from the server.");
+      console.error(`Error fetching response. Status: ${response.status}`);
+      alert("Failed to get a response from AI.");
       return;
     }
 
     const data = await response.json();
-    const reply = data.reply || "🤖 No response.";
+    const reply = data.reply.join("<br>") || "🤖 No response.";
 
-    renderChatMessage("assistant", reply); // Display AI response
+    // Display AI response in the chat box
+    const responseContainer = document.createElement("div");
+    responseContainer.classList.add("ai-response");
+    responseContainer.innerHTML = reply;
+
+    document.getElementById("chat-box").appendChild(responseContainer);
   } catch (error) {
     console.error("Error during fetch:", error.message);
-    alert("An error occurred. Check the console for details.");
+    alert("An error occurred while communicating with the server.");
   } finally {
-    loadingIndicator.style.display = "none"; // Hide loading indicator
+    // Hide loading indicator
+    loadingIndicator.style.display = "none";
   }
 }
 
-
-  
-
-  // Event listener for chat form submission
-  document.getElementById("chat-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    sendQuery();
-    document.getElementById("user-input").value = ""; // Clear input field after submission
-  });
+// Hooking up the sendQuery function to your chat form submission
+document.getElementById("chat-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  sendQuery();
+  document.getElementById("user-input").value = ""; // Clear input field
+});
 
   // Render chat messages in Learn View
   function renderChatMessage(role, message) {

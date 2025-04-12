@@ -1,27 +1,21 @@
 from flask import Flask, request, jsonify, render_template
 import requests
-from dotenv import load_dotenv
-import os
+from flask_dance.contrib.google import make_google_blueprint, google
 
-
-
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('index.html') 
 
-@app.route('/query', methods=["POST"])
+@app.route("/query", methods=["POST"])
 def query_ai():
+    print("Query endpoint called")  # Debug statement
     try:
-        # Load environment variables from new.env
-        load_dotenv("work/new.env")
-        api_key = os.getenv("API_KEY")  # Ensure the API key is loaded securely
-        if not api_key:
-            raise ValueError("API_KEY is missing!")
-
+        api_key = "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"
         data = request.json
         user_message = data.get("message", "")
+
         if not user_message:
             return jsonify({"reply": "Message cannot be empty."}), 400
 
@@ -34,7 +28,15 @@ def query_ai():
             json={
                 "model": "meta-llama/llama-3.3-70b-instruct:free",
                 "messages": [
-                    {"role": "system", "content": "You are a helpful assistant."},
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a helpful assistant. "
+                            "Always give answers with proper spacing, line breaks between paragraphs, and use bullet points when appropriate. "
+                            "Provide a summary first, then full details separated clearly."
+                            
+                        )
+                    },
                     {"role": "user", "content": user_message}
                 ]
             }
@@ -42,42 +44,33 @@ def query_ai():
 
         if response.status_code != 200:
             print(f"Error: Received status code {response.status_code}")
-            return jsonify({"reply": f"Error: {response.status_code}"}), response.status_code
+            return jsonify({"reply": f"Error: Received status code {response.status_code} from API."}), response.status_code
 
         data = response.json()
-        reply = data.get("choices", [{}])[0].get("message", {}).get("content", "🤖 No response.")
-        return jsonify({"reply": reply})
+        reply = data["choices"][0]["message"]["content"]
 
-    except Exception as e:
-        print("Error in /query endpoint:", str(e))
-        return jsonify({"reply": "Internal server error occurred."}), 500
-
-@app.route('/api/chat', methods=["POST"])
-def chat_with_ai():
-    try:
-        api_key = os.getenv("API_KEY")  # Ensure API key is loaded securely
-        if not api_key:
-            raise ValueError("API_KEY is missing!")
-
-        data = request.json
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json=data  # Forward the JSON payload from the frontend
+        # Formatting the reply for better readability
+        formatted_reply = (
+            reply.replace("\n", "\n\n")  # Double line breaks for paragraph separation
+                 .replace("•", "\n\n• ")  # Ensure bullet points have proper spacing
+                 .replace("- ", "\n\n- ")  # Handle hyphenated lists (optional)
+                 .strip()  # Remove any leading or trailing spaces
         )
 
-        if response.status_code != 200:
-            print(f"Error: Received status code {response.status_code}")
-            return jsonify({"reply": f"Error: {response.status_code}"}), response.status_code
+        # Chunk the response if it's too long
+        def chunk_response(response, chunk_size=500):
+            return [response[i:i+chunk_size] for i in range(0, len(response), chunk_size)]
 
-        return jsonify(response.json())
+        chunks = chunk_response(formatted_reply)
+
+        if not formatted_reply.strip():
+            formatted_reply = "🤖 Hmm, no response was generated. Try rephrasing your question."
+
+        return jsonify({"reply": chunks})
 
     except Exception as e:
-        print("Error in /api/chat endpoint:", str(e))
-        return jsonify({"reply": "Internal server error occurred."}), 500
-
+        print("Error:", e)
+        return jsonify({"reply": "Something went wrong while processing your request."}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
