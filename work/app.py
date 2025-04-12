@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, render_template
 import requests
 from flask_dance.contrib.google import make_google_blueprint, google
+import os
+api_key = os.getenv("API_KEY")
 
 app = Flask(__name__)  # Default configuration works perfectly for this structure
 
