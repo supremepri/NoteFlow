@@ -317,62 +317,38 @@
   const question = document.getElementById("user-input").value.trim();
   if (!question) {
     alert("Please enter a message!");
-    return;
+    return; // Exit here to prevent further execution
   }
 
-  // Display the loading indicator
+  // Show loading indicator
   loadingIndicator.style.display = "block";
 
   try {
     const response = await fetch("/query", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: question })
     });
 
-    // Handle non-200 responses
     if (!response.ok) {
-      const errorMsg = `Error: Received status ${response.status}`;
+      const errorMsg = `Error fetching response. Status: ${response.status}`;
       console.error(errorMsg);
-      alert("Failed to fetch response from AI.");
+      alert("Failed to get a response from the server.");
       return;
     }
 
     const data = await response.json();
-    const reply = Array.isArray(data.reply) ? data.reply.join("<br>") : "🤖 No response.";
+    const reply = data.reply || "🤖 No response.";
 
-    // Render AI response in the chat box
-    const responseContainer = document.createElement("div");
-    responseContainer.classList.add("ai-response");
-
-    const fullSpan = document.createElement("span");
-    fullSpan.className = "full-text";
-    fullSpan.innerHTML = reply;
-
-    // Toggle button for longer responses
-    const toggleBtn = document.createElement("button");
-    toggleBtn.textContent = "Show More";
-    toggleBtn.onclick = () => {
-      fullSpan.classList.toggle("hidden");
-      toggleBtn.textContent = toggleBtn.textContent === "Show More" ? "Show Less" : "Show More";
-    };
-
-    // Append elements to response container
-    responseContainer.append(fullSpan, toggleBtn);
-    document.getElementById("chat-box").appendChild(responseContainer);
-
-    console.log("AI Response:", reply);
+    renderChatMessage("assistant", reply); // Display AI response
   } catch (error) {
-    // Handle fetch errors
-    console.error("Error fetching response:", error.message);
-    alert("An error occurred while communicating with the server.");
+    console.error("Error during fetch:", error.message);
+    alert("An error occurred. Check the console for details.");
   } finally {
-    // Hide the loading indicator
-    loadingIndicator.style.display = "none";
+    loadingIndicator.style.display = "none"; // Hide loading indicator
   }
 }
+
 
   
 

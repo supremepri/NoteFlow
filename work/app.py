@@ -3,8 +3,7 @@ import requests
 from dotenv import load_dotenv
 import os
 
-# Load environment variables from new.env
-load_dotenv("work/new.env")
+
 
 app = Flask(__name__)
 
@@ -15,6 +14,8 @@ def home():
 @app.route('/query', methods=["POST"])
 def query_ai():
     try:
+        # Load environment variables from new.env
+        load_dotenv("work/new.env")
         api_key = os.getenv("API_KEY")  # Ensure the API key is loaded securely
         if not api_key:
             raise ValueError("API_KEY is missing!")
