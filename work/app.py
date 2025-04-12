@@ -13,45 +13,36 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
-@app.route("/query", methods=["POST"])
+@app.route('/query', methods=["POST"])
 def query_ai():
-    print("Query endpoint called")  # Debug statement
-    try:
-        api_key = os.getenv("API_KEY")  # Use environment variable for API key
-        data = request.json
-        user_message = data.get("message", "")
+    api_key = os.getenv("API_KEY")  # Ensure the API key is loaded securely
+    data = request.json
 
-        if not user_message:
-            return jsonify({"reply": "Message cannot be empty."}), 400
+    user_message = data.get("message", "")
+    if not user_message:
+        return jsonify({"reply": "Message cannot be empty."}), 400
 
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "meta-llama/llama-3.3-70b-instruct:free",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a helpful assistant. "
-                            "Always give answers with proper spacing, line breaks between paragraphs, and use bullet points when appropriate. "
-                            "Provide a summary first, then full details separated clearly."
-                        )
-                    },
-                    {"role": "user", "content": user_message}
-                ]
-            }
-        )
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_message}
+            ]
+        }
+    )
 
-        if response.status_code != 200:
-            print(f"Error: Received status code {response.status_code}")
-            return jsonify({"reply": f"Error: Received status code {response.status_code} from API."}), response.status_code
-            
-            data = response.json()
-            reply = data.get("choices", [{}])[0].get("message", {}).get("content", "🤖 Hmm, no response was generated. Try rephrasing your question.")
+    if response.status_code != 200:
+        return jsonify({"reply": f"Error: {response.status_code}"}), response.status_code
+
+    data = response.json()
+    reply = data["choices"][0]["message"]["content"]
+    return jsonify({"reply": reply})
 
         # Formatting the reply for better readability
         formatted_reply = (

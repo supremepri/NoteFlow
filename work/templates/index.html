@@ -314,60 +314,67 @@
   }
   // Ask AI functionality
   async function sendQuery() {
-    const question = document.getElementById("user-input").value.trim();
-    if (!question) return alert("Cannot send an empty message!");
-
-    // Show loading indicator
-    loadingIndicator.style.display = "block";
-
-    try {
-      const res = await fetch("/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: question // The user query being sent to the backend
-        })
-      });
-
-      if (!res.ok) {
-        console.error("Error fetching response. Status:", res.status);
-        alert("Failed to get response from AI.");
-        return;
-      }
-
-      const data = await res.json();
-      const reply = data.reply.join("<br>") || "🤖 No response.";
-
-      // Create and display AI response in the chat
-      const responseContainer = document.createElement("div");
-      responseContainer.classList.add("ai-response");
-
-      const fullSpan = document.createElement("span");
-      fullSpan.className = "full-text";
-      fullSpan.innerHTML = reply;
-
-      // Create toggle button for longer responses
-      const toggleBtn = document.createElement("button");
-      toggleBtn.textContent = "Show More";
-      toggleBtn.onclick = () => {
-        fullSpan.classList.toggle("hidden");
-        toggleBtn.textContent = toggleBtn.textContent === "Show More" ? "Show Less" : "Show More";
-      };
-
-      // Append elements to response container
-      responseContainer.append(fullSpan, toggleBtn);
-      document.getElementById("chat-box").appendChild(responseContainer);
-      console.log("AI Response:", reply);
-    } catch (err) {
-      console.error("Error during fetch:", err.message);
-      alert("Failed to get response!");
-    } finally {
-      // Hide loading indicator
-      loadingIndicator.style.display = "none";
-    }
+  const question = document.getElementById("user-input").value.trim();
+  if (!question) {
+    alert("Please enter a message!");
+    return;
   }
+
+  // Display the loading indicator
+  loadingIndicator.style.display = "block";
+
+  try {
+    const response = await fetch("/query", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: question })
+    });
+
+    // Handle non-200 responses
+    if (!response.ok) {
+      const errorMsg = `Error: Received status ${response.status}`;
+      console.error(errorMsg);
+      alert("Failed to fetch response from AI.");
+      return;
+    }
+
+    const data = await response.json();
+    const reply = Array.isArray(data.reply) ? data.reply.join("<br>") : "🤖 No response.";
+
+    // Render AI response in the chat box
+    const responseContainer = document.createElement("div");
+    responseContainer.classList.add("ai-response");
+
+    const fullSpan = document.createElement("span");
+    fullSpan.className = "full-text";
+    fullSpan.innerHTML = reply;
+
+    // Toggle button for longer responses
+    const toggleBtn = document.createElement("button");
+    toggleBtn.textContent = "Show More";
+    toggleBtn.onclick = () => {
+      fullSpan.classList.toggle("hidden");
+      toggleBtn.textContent = toggleBtn.textContent === "Show More" ? "Show Less" : "Show More";
+    };
+
+    // Append elements to response container
+    responseContainer.append(fullSpan, toggleBtn);
+    document.getElementById("chat-box").appendChild(responseContainer);
+
+    console.log("AI Response:", reply);
+  } catch (error) {
+    // Handle fetch errors
+    console.error("Error fetching response:", error.message);
+    alert("An error occurred while communicating with the server.");
+  } finally {
+    // Hide the loading indicator
+    loadingIndicator.style.display = "none";
+  }
+}
+
+  
 
   // Event listener for chat form submission
   document.getElementById("chat-form").addEventListener("submit", function (e) {
