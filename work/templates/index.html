@@ -335,21 +335,23 @@ function hideFloatingTimer() {
   // Show loading indicator
   loadingIndicator.style.display = "block";
 
+  const apiKey = process.env.OPENAI_API_KEY;
+  
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer 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",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.3-70b-instruct:free",
-        messages: [
-          { role: "system", content: "You are a helpful assistant., whenever explaining content use proper spacing which is efficient and helps the user read better and DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______ " },
-          { role: "user", content: question }
-        ]
-      })
-    });
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${apiKey}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "meta-llama/llama-3.3-70b-instruct:free",
+    messages: [
+    { role: "system", content: "You are a helpful assistant., whenever explaining content use proper spacing which is efficient and helps the user read better and DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______ " },
+      { role: "user", content: question }
+    ]
+  })
+});
 
     if (!res.ok) {
       console.error("Error fetching response. Status:", res.status);
@@ -357,6 +359,8 @@ function hideFloatingTimer() {
       return;
     }
 
+
+    //// { role: "system", content: "You are a helpful assistant., whenever explaining content use proper spacing which is efficient and helps the user read better and DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______ " },
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content || "🤖 No response.";
 
@@ -456,19 +460,22 @@ document.getElementById("ask-ai").onclick = async () => {
 
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer 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",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.3-70b-instruct:free",
-        messages: [
-          { role: "system", content: "Analyze the following note and answer the user's question based on it.DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______  " },
-          { role: "user", content: context }
-        ]
-      })
-    });
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${apiKey}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "meta-llama/llama-3.3-70b-instruct:free",
+    messages: [
+      { role: "system", content: "Analyze the following note and answer the user's question based on it.DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______  "},
+      { role: "user", content: question }
+    ]
+  })
+});
+
+    ///{ role: "system", content: "Analyze the following note and answer the user's question based on it.DO NOT USE ASTERISK  AT ANY POINT IN EXPLAINATION RATHER USE •, and for titles use underlines _______  "
+
 
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content || "🤖 No response.";
