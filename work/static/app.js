@@ -10,7 +10,8 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  getDoc
 } from "firebase/firestore";
 import {
   getAuth,
@@ -36,19 +37,20 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// Global User
+// Global user state
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  // DOM References
   const loginBtn = document.getElementById("google-login");
-  const logoutBtn = document.getElementByElementById("logout-btn");
+  const logoutBtn = document.getElementById("logout-btn");
   const notesList = document.getElementById("notes-list");
   const form = document.getElementById("chat-form");
   const input = document.getElementById("user-input");
   const chatBox = document.getElementById("chat-box");
   const loadingIndicator = document.getElementById("loading");
 
-  // Google Sign-in
+  // Google Sign-In
   loginBtn.addEventListener("click", () => {
     signInWithPopup(auth, provider)
       .then(result => {
@@ -66,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Auth state change
+  // Auth state change listener
   onAuthStateChanged(auth, user => {
     currentUser = user;
     if (user) {
@@ -82,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Send AI prompt
+  // Chat form submission handler
   form.addEventListener("submit", async e => {
     e.preventDefault();
     const userText = input.value.trim();
@@ -90,104 +92,102 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Cannot send an empty message!");
       return;
     }
-
     sendQuery(userText);
     input.value = "";
   });
 
+  // Function: Send AI query via your backend /query endpoint
   async function sendQuery(question) {
     loadingIndicator.style.display = "block";
-
     try {
+      // Optionally include user notes context
       const userNotes = await getNotesForLearning();
-      const context = `User's notes: ${userNotes}\n\nQuestion: ${question}`;
+      const context = userNotes
+        ? `User's notes: ${userNotes}\n\nQuestion: ${question}`
+        : question;
 
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      // Call your Flask backend endpoint (which securely uses the API key)
+      const res = await fetch("/query", {
         method: "POST",
-        headers: {
-          Authorization: "Bearer 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",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "meta-llama/llama-3.3-70b-instruct:free",
-          messages: [
-            { role: "system", content: "You are an assistant that learns from user notes." },
-            { role: "user", content: context }
-          ]
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: context })
       });
 
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || "🤖 No response.";
+      if (!res.ok) {
+        console.error("Error fetching response. Status:", res.status);
+        alert("Failed to get response from AI.");
+        return;
+      }
 
+      const data = await res.json();
+      const reply = Array.isArray(data.reply)
+        ? data.reply.join("<br>")
+        : "🤖 No response.";
+
+      // Create a message element to show the AI response
       const div = document.createElement("div");
       div.classList.add("message", "assistant", "ai-response");
       div.innerHTML = `<span class="full-text">${reply}</span>`;
       chatBox.appendChild(div);
-
-      loadingIndicator.style.display = "none";
+      console.log("AI Response:", reply);
     } catch (err) {
       console.error(err);
       const errorDiv = document.createElement("div");
       errorDiv.classList.add("message", "assistant");
       errorDiv.innerText = "❌ Something went wrong.";
       chatBox.appendChild(errorDiv);
+    } finally {
       loadingIndicator.style.display = "none";
     }
   }
 
-  // Save Note
-  document.getElementById("save-note").onclick = async () => {
+  // Save Note functionality
+  document.getElementById("save-note").addEventListener("click", async () => {
+    // Get the last AI response's full text content
     const fullResponseElement = document.querySelector(".ai-response:last-of-type .full-text");
     const responseText = fullResponseElement ? fullResponseElement.innerText.trim() : "";
-
     if (!responseText) {
       alert("No response to save!");
       return;
     }
-
     if (!currentUser) {
       alert("You need to be logged in to save notes.");
       return;
     }
-
     const newNote = {
       uid: currentUser.uid,
       content: responseText,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
-
     try {
       const docRef = await addDoc(collection(db, "notes"), newNote);
-      console.log("Note saved successfully!");
-      loadUserNotes(); // Refresh notes
+      console.log("Note saved successfully!", docRef.id);
+      loadUserNotes();
     } catch (err) {
       console.error("Error saving note:", err);
     }
-  };
+  });
 
-  // Load Notes
+  // Load user notes from Firestore
   async function loadUserNotes() {
     if (!currentUser) return;
-
-    const q = query(
-      collection(db, "notes"),
-      where("uid", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
-    );
-
     try {
+      const q = query(
+        collection(db, "notes"),
+        where("uid", "==", currentUser.uid),
+        orderBy("createdAt", "desc")
+      );
       const snapshot = await getDocs(q);
       notesList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const note = doc.data();
+      snapshot.forEach(docSnap => {
+        const note = docSnap.data();
         const li = document.createElement("li");
         li.textContent = note.content.length > 50 ? note.content.slice(0, 50) + "..." : note.content;
         li.onclick = () => {
           document.getElementById("note-editor").value = note.content;
           document.getElementById("note-tags").value = note.tags || "";
-          document.getElementById("save-edit").dataset.id = doc.id;
+          document.getElementById("save-edit").dataset.id = docSnap.id;
           switchView("notes-view");
         };
         notesList.appendChild(li);
@@ -197,13 +197,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Save Edits to Notes
-  document.getElementById("save-edit").onclick = async () => {
+  // Get all user notes for learning (returns a concatenated string)
+  async function getNotesForLearning() {
+    if (!currentUser) return "";
+    try {
+      const q = query(
+        collection(db, "notes"),
+        where("uid", "==", currentUser.uid),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(docSnap => docSnap.data().content).join("\n");
+    } catch (err) {
+      console.error("Error fetching notes for learning:", err);
+      return "";
+    }
+  }
+
+  // Save edits to an existing note
+  document.getElementById("save-edit").addEventListener("click", async () => {
     const noteId = document.getElementById("save-edit").dataset.id;
     const content = document.getElementById("note-editor").value;
     const tags = document.getElementById("note-tags").value;
     if (!noteId || !content.trim()) return;
-
     try {
       await updateDoc(doc(db, "notes", noteId), {
         content,
@@ -215,13 +231,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Error updating note:", err);
     }
-  };
+  });
 
-  // Delete Note
-  document.getElementById("delete-note").onclick = async () => {
+  // Delete note functionality
+  document.getElementById("delete-note").addEventListener("click", async () => {
     const noteId = document.getElementById("save-edit").dataset.id;
     if (!noteId) return;
-
     try {
       await deleteDoc(doc(db, "notes", noteId));
       alert("Note deleted!");
@@ -231,61 +246,83 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Error deleting note:", err);
     }
-  };
+  });
 
-  // Fetch Notes for Learning
-  async function getNotesForLearning() {
-    if (!currentUser) return "";
+  // Learn View: Ask AI for a selected note's context
+  document.getElementById("ask-ai").addEventListener("click", async () => {
+    const dropdown = document.getElementById("topic-dropdown");
+    const noteId = dropdown.value;
+    const userQuery = document.getElementById("learn-input").value.trim();
+    if (!noteId) {
+      alert("Please select a note first!");
+      return;
+    }
+    if (!userQuery) {
+      alert("Please ask a question!");
+      return;
+    }
+    const noteDocRef = doc(db, "notes", noteId);
+    const noteSnapshot = await getDoc(noteDocRef);
+    if (!noteSnapshot.exists()) {
+      alert("Note not found!");
+      return;
+    }
+    const noteContent = noteSnapshot.data().content;
+    const context = `User note: ${noteContent}\n\nUser question: ${userQuery}`;
+    loadingIndicator.style.display = "block";
+    try {
+      const res = await fetch("/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: context })
+      });
+      if (!res.ok) {
+        console.error("Error fetching AI response:", res.status);
+        alert("AI failed to provide an answer.");
+        return;
+      }
+      const data = await res.json();
+      const aiReply = Array.isArray(data.reply)
+        ? data.reply.join("<br>")
+        : "🤖 No response was generated.";
+      renderChatMessage("user", userQuery);
+      renderChatMessage("assistant", aiReply);
+    } catch (err) {
+      console.error("Error during AI fetch:", err.message);
+      alert("Failed to get response!");
+    } finally {
+      loadingIndicator.style.display = "none";
+    }
+  });
 
-    const q = query(
-      collection(db, "notes"),
-      where("uid", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => doc.data().content).join("\n");
+  // Render chat messages in Learn View
+  function renderChatMessage(role, message) {
+    const learnContent = document.getElementById("learn-content");
+    if (!learnContent) {
+      console.error("Learn-content element not found!");
+      return;
+    }
+    const messageContainer = document.createElement("div");
+    messageContainer.classList.add("chat-message", role);
+    const text = document.createElement("p");
+    text.textContent = message;
+    messageContainer.appendChild(text);
+    learnContent.appendChild(messageContainer);
+    learnContent.scrollTop = learnContent.scrollHeight;
+    console.log(`Message rendered (${role}):`, message);
   }
 
-  // Learn View Logic
-  document.getElementById("topic-dropdown").addEventListener("change", async function () {
-    const topic = this.value;
-    const contentDiv = document.getElementById("learn-content");
-
-    if (!topic) return;
-
-    const notesContext = await getNotesForLearning();
-    const context = `User's notes: ${notesContext}\n\nTopic: ${topic}`;
-
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer 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",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.3-70b-instruct:free",
-        messages: [
-          { role: "system", content: "You are an assistant that learns from user notes." },
-          { role: "user", content: context }
-        ]
-      })
-    });
-
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "🤖 No response.";
-    contentDiv.innerHTML = `<p>${reply}</p>`;
+  // Global error handling (optional)
+  window.addEventListener("error", (e) => {
+    console.error("Global Error:", e.message);
   });
-  // View Switcher
-    // View Switcher
+
+  // Expose global functions if needed
+  window.loadUserNotes = loadUserNotes;
   window.switchView = function (view) {
-    // Toggle visibility of views based on the provided `view`
-    const views = ['chat-view', 'notes-view', 'learn-view'];
+    const views = ["chat-view", "notes-view", "learn-view"];
     views.forEach(v => {
-      document.getElementById(v).style.display = (v === view) ? 'block' : 'none';
+      document.getElementById(v).style.display = (v === view) ? "block" : "none";
     });
   };
-
-  // Expose global functions for testing or external calls
-  window.loadUserNotes = loadUserNotes;
 });

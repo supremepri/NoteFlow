@@ -293,29 +293,27 @@
 
     // Standard AI Chat Query Functionality using your Flask /query endpoint
     async function sendQuery() {
-      const question = document.getElementById("user-input").value.trim();
-      if (!question) {
-        alert("Cannot send an empty message!");
-        return;
-      }
-      loadingIndicator.style.display = "block";
-      try {
-        // Call your own /query endpoint rather than the external API
-        const res = await fetch("/query", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: question })
-        });
-        if (!res.ok) {
-          console.error("Error fetching response. Status:", res.status);
-          alert("Failed to get response from AI.");
-          return;
-        }
-        const data = await res.json();
-        // Combine the chunked response
-        const reply = Array.isArray(data.reply)
-          ? data.reply.join("<br>")
-          : "🤖 No response.";
+  const question = document.getElementById("user-input").value.trim();
+  if (!question) {
+    alert("Cannot send an empty message!");
+    return;
+  }
+  loadingIndicator.style.display = "block";
+  try {
+    // Call your own Flask backend endpoint
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: question })
+    });
+    if (!res.ok) {
+      console.error("Error fetching response. Status:", res.status);
+      alert("Failed to get response from AI.");
+      return;
+    }
+    const data = await res.json();
+    const reply = Array.isArray(data.reply) ? data.reply.join("<br>") : "🤖 No response.";
+    
         // Split into preview and full text for toggling
         const lines = reply.split('\n').filter(line => line.trim() !== "");
         const previewLines = lines.slice(0, 2).join('<br>');
@@ -339,12 +337,12 @@
         document.getElementById("chat-box").appendChild(responseContainer);
         console.log("AI Response:", reply);
       } catch (err) {
-        console.error("Error during fetch:", err.message);
-        alert("Failed to get response!");
-      } finally {
-        loadingIndicator.style.display = "none";
-      }
-    }
+    console.error("Error during fetch:", err.message);
+    alert("Failed to get response!");
+  } finally {
+    loadingIndicator.style.display = "none";
+  }
+}
 
     // Hook sendQuery to chat form submission
     document.getElementById("chat-form").addEventListener("submit", function (e) {
