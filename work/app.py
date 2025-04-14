@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, render_template
 import requests
-
+import os
 app = Flask(__name__, static_folder='static', template_folder='templates')
+from flask_cors import CORS
+CORS(app)
 
 @app.route('/')
 def home():
@@ -12,7 +14,10 @@ def query_ai():
     print("Query endpoint called")
     try:
         # Hardcoded API key from your original working version
-        api_key = "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"
+        api_key = os.getenv("API_KEY")
+        if not api_key:
+            raise ValueError("API_KEY is missing!")
+        
         data = request.json
         user_message = data.get("message", "")
         if not user_message:

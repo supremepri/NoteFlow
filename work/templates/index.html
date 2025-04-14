@@ -9,6 +9,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+  <script src="{{ url_for('static', filename='timer.js') }}"></script>
+
 </head>
 <body>
   <div class="app-container">
@@ -370,51 +372,58 @@
 
     // Learn View: AI Query for a selected note
     document.getElementById("ask-ai").onclick = async () => {
-      const dropdown = document.getElementById("topic-dropdown");
-      const noteId = dropdown.value;
-      const userQuery = document.getElementById("learn-input").value.trim();
-      if (!noteId) {
-        alert("Please select a note first!");
-        return;
-      }
-      if (!userQuery) {
-        alert("Please ask a question!");
-        return;
-      }
-      const docRef = db.collection("notes").doc(noteId);
-      const docSnapshot = await docRef.get();
-      if (!docSnapshot.exists) {
-        alert("Note not found!");
-        return;
-      }
-      const noteContent = docSnapshot.data().content;
-      const context = `User note: ${noteContent}\n\nUser question: ${userQuery}`;
-      loadingIndicator.style.display = "block";
-      try {
-        // Call your Flask /query endpoint using the contextual query
-        const res = await fetch("/query", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: context })
-        });
-        if (!res.ok) {
-          console.error("Error fetching AI response:", res.status);
-          alert("AI failed to provide an answer.");
-          return;
-        }
-        const data = await res.json();
-        const aiReply = Array.isArray(data.reply)
-          ? data.reply.join("<br>")
-          : "🤖 No response was generated.";
-        renderChatMessage("user", userQuery);
-        renderChatMessage("assistant", aiReply);
-      } catch (err) {
-        console.error("Error during AI fetch:", err.message);
-        alert("Failed to get response!");
-      } finally {
-        loadingIndicator.style.display = "none";
-      }
-    };
+  const dropdown = document.getElementById("topic-dropdown");
+  const noteId = dropdown.value;
+  const userQuery = document.getElementById("learn-input").value.trim();
+
+  if (!noteId) {
+    alert("Please select a note first!");
+    return;
+  }
+  if (!userQuery) {
+    alert("Please ask a question!");
+    return;
+  }
+
+  const noteRef = db.collection("notes").doc(noteId);
+  const noteSnapshot = await noteRef.get();
+  if (!noteSnapshot.exists) {
+    alert("Note not found!");
+    return;
+  }
+
+  const noteContent = noteSnapshot.data().content;
+  const context = `User note: ${noteContent}\n\nUser question: ${userQuery}`;
+
+  loadingIndicator.style.display = "block";
+
+  try {
+    const res = await fetch("/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: context })
+    });
+
+    if (!res.ok) {
+      console.error("Error fetching AI response:", res.status);
+      alert("AI failed to provide an answer.");
+      return;
+    }
+
+    const data = await res.json();
+    const aiReply = Array.isArray(data.reply)
+      ? data.reply.join("<br>")
+      : "🤖 No response.";
+
+    renderChatMessage("user", userQuery);
+    renderChatMessage("assistant", aiReply);
+  } catch (err) {
+    console.error("Error during AI fetch:", err.message);
+    alert("Failed to get response!");
+  } finally {
+    loadingIndicator.style.display = "none";
+  }
+};
 
     // Global error handling
     window.addEventListener("error", function (e) {

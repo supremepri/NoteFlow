@@ -235,10 +235,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  document.getElementById("ask-ai").addEventListener("click", async () => {
+  document.getElementById("ask-ai").onclick = async () => {
     const dropdown = document.getElementById("topic-dropdown");
     const noteId = dropdown.value;
     const userQuery = document.getElementById("learn-input").value.trim();
+  
     if (!noteId) {
       alert("Please select a note first!");
       return;
@@ -247,30 +248,37 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Please ask a question!");
       return;
     }
-    const noteDocRef = doc(db, "notes", noteId);
-    const noteSnapshot = await getDoc(noteDocRef);
-    if (!noteSnapshot.exists()) {
+  
+    const noteRef = db.collection("notes").doc(noteId);
+    const noteSnapshot = await noteRef.get();
+    if (!noteSnapshot.exists) {
       alert("Note not found!");
       return;
     }
+  
     const noteContent = noteSnapshot.data().content;
     const context = `User note: ${noteContent}\n\nUser question: ${userQuery}`;
+  
     loadingIndicator.style.display = "block";
+  
     try {
       const res = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: context })
       });
+  
       if (!res.ok) {
         console.error("Error fetching AI response:", res.status);
         alert("AI failed to provide an answer.");
         return;
       }
+  
       const data = await res.json();
       const aiReply = Array.isArray(data.reply)
         ? data.reply.join("<br>")
-        : "🤖 No response was generated.";
+        : "🤖 No response.";
+  
       renderChatMessage("user", userQuery);
       renderChatMessage("assistant", aiReply);
     } catch (err) {
@@ -279,7 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       loadingIndicator.style.display = "none";
     }
-  });
+  };
+  
 
   function renderChatMessage(role, message) {
     const learnContent = document.getElementById("learn-content");
