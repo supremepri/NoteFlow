@@ -17,7 +17,8 @@ import {
   getAuth,
   onAuthStateChanged,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  signOut
 } from "firebase/auth";
 
 // Firebase Config
@@ -37,11 +38,9 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// Global user state
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  // DOM References
   const loginBtn = document.getElementById("google-login");
   const logoutBtn = document.getElementById("logout-btn");
   const notesList = document.getElementById("notes-list");
@@ -50,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatBox = document.getElementById("chat-box");
   const loadingIndicator = document.getElementById("loading");
 
-  // Google Sign-In
   loginBtn.addEventListener("click", () => {
     signInWithPopup(auth, provider)
       .then(result => {
@@ -61,14 +59,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 
-  // Logout
   logoutBtn.addEventListener("click", () => {
-    auth.signOut().then(() => {
+    signOut(auth).then(() => {
       console.log("User signed out");
     });
   });
 
-  // Auth state change listener
   onAuthStateChanged(auth, user => {
     currentUser = user;
     if (user) {
@@ -84,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Chat form submission handler
   form.addEventListener("submit", async e => {
     e.preventDefault();
     const userText = input.value.trim();
@@ -96,17 +91,14 @@ document.addEventListener("DOMContentLoaded", () => {
     input.value = "";
   });
 
-  // Function: Send AI query via your backend /query endpoint
   async function sendQuery(question) {
     loadingIndicator.style.display = "block";
     try {
-      // Optionally include user notes context
       const userNotes = await getNotesForLearning();
       const context = userNotes
         ? `User's notes: ${userNotes}\n\nQuestion: ${question}`
         : question;
 
-      // Call your Flask backend endpoint (which securely uses the API key)
       const res = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,7 +116,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ? data.reply.join("<br>")
         : "🤖 No response.";
 
-      // Create a message element to show the AI response
       const div = document.createElement("div");
       div.classList.add("message", "assistant", "ai-response");
       div.innerHTML = `<span class="full-text">${reply}</span>`;
@@ -141,11 +132,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Save Note functionality
   document.getElementById("save-note").addEventListener("click", async () => {
-    // Get the last AI response's full text content
     const fullResponseElement = document.querySelector(".ai-response:last-of-type .full-text");
-    const responseText = fullResponseElement ? fullResponseElement.innerText.trim() : "";
+    const responseText = fullResponseElement?.innerText.trim();
     if (!responseText) {
       alert("No response to save!");
       return;
@@ -169,7 +158,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Load user notes from Firestore
   async function loadUserNotes() {
     if (!currentUser) return;
     try {
@@ -183,7 +171,9 @@ document.addEventListener("DOMContentLoaded", () => {
       snapshot.forEach(docSnap => {
         const note = docSnap.data();
         const li = document.createElement("li");
-        li.textContent = note.content.length > 50 ? note.content.slice(0, 50) + "..." : note.content;
+        li.textContent = note.content.length > 50
+          ? note.content.slice(0, 50) + "..."
+          : note.content;
         li.onclick = () => {
           document.getElementById("note-editor").value = note.content;
           document.getElementById("note-tags").value = note.tags || "";
@@ -197,7 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Get all user notes for learning (returns a concatenated string)
   async function getNotesForLearning() {
     if (!currentUser) return "";
     try {
@@ -214,7 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Save edits to an existing note
   document.getElementById("save-edit").addEventListener("click", async () => {
     const noteId = document.getElementById("save-edit").dataset.id;
     const content = document.getElementById("note-editor").value;
@@ -233,7 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Delete note functionality
   document.getElementById("delete-note").addEventListener("click", async () => {
     const noteId = document.getElementById("save-edit").dataset.id;
     if (!noteId) return;
@@ -248,7 +235,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Learn View: Ask AI for a selected note's context
   document.getElementById("ask-ai").addEventListener("click", async () => {
     const dropdown = document.getElementById("topic-dropdown");
     const noteId = dropdown.value;
@@ -295,7 +281,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Render chat messages in Learn View
   function renderChatMessage(role, message) {
     const learnContent = document.getElementById("learn-content");
     if (!learnContent) {
@@ -308,21 +293,11 @@ document.addEventListener("DOMContentLoaded", () => {
     text.textContent = message;
     messageContainer.appendChild(text);
     learnContent.appendChild(messageContainer);
-    learnContent.scrollTop = learnContent.scrollHeight;
-    console.log(`Message rendered (${role}):`, message);
   }
 
-  // Global error handling (optional)
-  window.addEventListener("error", (e) => {
-    console.error("Global Error:", e.message);
-  });
-
-  // Expose global functions if needed
-  window.loadUserNotes = loadUserNotes;
-  window.switchView = function (view) {
-    const views = ["chat-view", "notes-view", "learn-view"];
-    views.forEach(v => {
-      document.getElementById(v).style.display = (v === view) ? "block" : "none";
-    });
-  };
+  // Dummy function: Replace this with your actual view-switching logic
+  function switchView(viewId) {
+    console.log("Switching view to:", viewId);
+    // Hide and show view logic here (if applicable)
+  }
 });
