@@ -4,6 +4,10 @@ import os
 app = Flask(__name__, static_folder='static', template_folder='templates')
 from flask_cors import CORS
 CORS(app)
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 @app.route('/')
 def home():
@@ -14,23 +18,30 @@ def query_ai():
     print("Query endpoint called")  # Debugging
     data = request.json
     print("Received data:", data)  # Debugging
-
+    print("All ENV Variables:", os.environ)
     try:
         api_key = os.getenv("API_KEY")
+        print("API_KEY:", api_key)  # Debugging check
         if not api_key:
             raise ValueError("API_KEY is missing!")
 
         response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+        "https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={"messages": [{"role": "user", "content": data.get("message", "")}]}
-        )
+        "Authorization": f"Bearer {api_key.strip()}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},  # System instruction
+            {"role": "user", "content": data.get("message", "")}  # User message
+        ]
+    }
+)
         if response.status_code != 200:
-            print(f"Error: Received status code {response.status_code}")
-            return jsonify({"reply": f"Error: Received status code {response.status_code} from API."}), response.status_code
+            print(f"API Error {response.status_code}: {response.text}")  # Debugging
+            return jsonify({"error": f"API Error {response.status_code}: {response.text}"}), response.status_code
 
         reply = response.json()["choices"][0]["message"]["content"]
         print("AI Response:", reply)  # Debugging
