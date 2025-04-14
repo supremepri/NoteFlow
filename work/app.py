@@ -27,18 +27,19 @@ def query_ai():
 
         response = requests.post(
         "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-        "Authorization": f"Bearer {api_key.strip()}",
-        "Content-Type": "application/json"
-    },
-    json={
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},  # System instruction
-            {"role": "user", "content": data.get("message", "")}  # User message
-        ]
-    }
-)
+        headers={
+            "Authorization": f"Bearer {api_key}",  # Ensure no formatting issues
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": data.get("message", "")}
+            ]
+        }
+    )
+
         if response.status_code != 200:
             print(f"API Error {response.status_code}: {response.text}")  # Debugging
             return jsonify({"error": f"API Error {response.status_code}: {response.text}"}), response.status_code
