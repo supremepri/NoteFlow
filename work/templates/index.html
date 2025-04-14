@@ -48,9 +48,10 @@
           <h2>Timer</h2>
           <div id="timer">00:00:00</div>
           <div id="timer-controls">
-            <button onclick="startTimer()" class="pure-button">Start</button>
-            <button onclick="pauseTimer()" class="pure-button">Pause</button>
-            <button onclick="resetTimer()" class="pure-button">Reset</button>
+            <button id="startTimerBtn" class="pure-button">Start</button>
+            <button id="pauseTimerBtn" class="pure-button">Pause</button>
+            <button id="resetTimerBtn" class="pure-button">Reset</button>
+
           </div>
         </div>
       </section>
@@ -96,11 +97,11 @@
       appId: "1:912656189609:web:f49e7778bff02c1c1141b8",
       measurementId: "G-TG4CDSS8LZ"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+    db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED, merge: true });
+
 
     const loginBtn = document.getElementById('google-login');
     const logoutBtn = document.getElementById('logout-btn');

@@ -11,17 +11,14 @@ def home():
 
 @app.route("/query", methods=["POST"])
 def query_ai():
-    print("Query endpoint called")
+    print("Query endpoint called")  # Debugging
+    data = request.json
+    print("Received data:", data)  # Debugging
+
     try:
-        # Hardcoded API key from your original working version
         api_key = os.getenv("API_KEY")
         if not api_key:
             raise ValueError("API_KEY is missing!")
-        
-        data = request.json
-        user_message = data.get("message", "")
-        if not user_message:
-            return jsonify({"reply": "Message cannot be empty."}), 400
 
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
@@ -29,27 +26,14 @@ def query_ai():
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
-            json={
-                "model": "meta-llama/llama-3.3-70b-instruct:free",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a helpful assistant. Always give answers with proper spacing, line breaks between paragraphs, and use bullet points when appropriate. "
-                            "Provide a summary first, then full details separated clearly."
-                        )
-                    },
-                    {"role": "user", "content": user_message}
-                ]
-            }
+            json={"messages": [{"role": "user", "content": data.get("message", "")}]}
         )
-
         if response.status_code != 200:
             print(f"Error: Received status code {response.status_code}")
             return jsonify({"reply": f"Error: Received status code {response.status_code} from API."}), response.status_code
 
-        data = response.json()
-        reply = data["choices"][0]["message"]["content"]
+        reply = response.json()["choices"][0]["message"]["content"]
+        print("AI Response:", reply)  # Debugging
 
         # Format the reply for better readability
         formatted_reply = (
@@ -68,9 +52,10 @@ def query_ai():
             formatted_reply = "🤖 Hmm, no response was generated. Try rephrasing your question."
 
         return jsonify({"reply": chunks})
+    
     except Exception as e:
         print("Error:", e)
-        return jsonify({"reply": "Something went wrong while processing your request."}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
