@@ -99,12 +99,12 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `User's notes: ${userNotes}\n\nQuestion: ${question}`
         : question;
 
-      const res = await fetch("/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: context })
-      });
-
+        const res = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: question })
+        });
+        
       if (!res.ok) {
         console.error("Error fetching response. Status:", res.status);
         alert("Failed to get response from AI.");

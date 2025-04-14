@@ -302,12 +302,12 @@
   }
   loadingIndicator.style.display = "block";
   try {
-    // Call your own Flask backend endpoint
     const res = await fetch("/query", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: question })
-    });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message: question })
+});
+
     if (!res.ok) {
       console.error("Error fetching response. Status:", res.status);
       alert("Failed to get response from AI.");
