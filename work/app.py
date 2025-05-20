@@ -32,7 +32,7 @@ def query_ai():
             "Content-Type": "application/json"
         },
         json={
-            "model": "qwen/qwen3-4b:free",
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
             "messages": [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": data.get("message", "")}
